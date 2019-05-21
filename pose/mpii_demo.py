@@ -3,8 +3,8 @@ import torch
 import torch.nn.parallel
 import torch.optim
 from scipy.ndimage import gaussian_filter, maximum_filter
-from pose.utils.osutils import mkdir_p, isfile, isdir, join
-import pose.models as models
+from utils.osutils import mkdir_p, isfile, isdir, join
+import models as models
 import cv2
 import numpy as np
 
@@ -92,21 +92,22 @@ def main(args):
     # load checkpoint
     model = load_model(args.arch, args.stacks, args.blocks, args.num_classes, args.mobile, args.checkpoint)
     in_res_h , in_res_w = args.in_res, args.in_res
-
+    print("loaded Model")
     # load image from file and do preprocess
     image = load_image(args.image, in_res_w, in_res_h)
-
+    print("loaded Image")
     # do inference
     kps = inference(model, image, args.device)
-
+    print("Inference done")
     # render the detected keypoints
     cvmat = cv2.imread(args.image)
     scale_x = cvmat.shape[1]*1.0/in_res_w
     scale_y = cvmat.shape[0]*1.0/in_res_h
     render_kps(cvmat, kps, scale_x, scale_y)
-
-    cv2.imshow('x', cvmat)
-    cv2.waitKey(0)
+    print("CVMAT prepared")
+    cv2.imwrite("data/out.jpg", cvmat)
+    #cv2.imshow('x', cvmat)
+    #cv2.waitKey(0)
 
 if __name__ == '__main__':
     import argparse
