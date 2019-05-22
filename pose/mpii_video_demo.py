@@ -12,8 +12,7 @@ model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
                      and callable(models.__dict__[name]))
 
-def load_image(imgfile, w, h ):
-    image = cv2.imread(imgfile)
+def load_image(image, w, h ):
     image = cv2.resize(image, (w, h))
     image = image[:, :, ::-1]  # BGR -> RGB
     image = image / 255.0
@@ -93,21 +92,30 @@ def main(args):
     model = load_model(args.arch, args.stacks, args.blocks, args.num_classes, args.mobile, args.checkpoint)
     in_res_h , in_res_w = args.in_res, args.in_res
     print("loaded Model")
-    # load image from file and do preprocess
-    image = load_image(args.image, in_res_w, in_res_h)
-    print("loaded Image")
-    # do inference
-    kps = inference(model, image, args.device)
-    print("Inference done")
-    # render the detected keypoints
-    cvmat = cv2.imread(args.image)
-    scale_x = cvmat.shape[1]*1.0/in_res_w
-    scale_y = cvmat.shape[0]*1.0/in_res_h
-    render_kps(cvmat, kps, scale_x, scale_y)
-    print("CVMAT prepared")
-    cv2.imwrite("data/out.jpg", cvmat)
-    #cv2.imshow('x', cvmat)
-    #cv2.waitKey(0)
+
+    cap = cv2.VideoCapture(args.image)
+
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('output.avi', fourcc, 30.0, (in_res_h, in_res_w ))
+
+    while(cap.isOpened()):
+        ret, image = cap.read()
+        cvmat = image
+        # load image from file and do preprocess
+        image = load_image(cap, in_res_w, in_res_h)
+        print("loaded Image")
+        # do inference
+        kps = inference(model, image, args.device)
+        print("Inference done")
+        # render the detected keypoints
+        scale_x = cvmat.shape[1]*1.0/in_res_w
+        scale_y = cvmat.shape[0]*1.0/in_res_h
+        render_kps(cvmat, kps, scale_x, scale_y)
+        print("CVMAT prepared")
+        out.write(cvmat)
+    cap.release()
+    out.release()
 
 if __name__ == '__main__':
     import argparse
